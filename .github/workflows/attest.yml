@@ -1,0 +1,45 @@
+name: attest
+
+# Daily attestation of SparkXI's published predictions. Runs AFTER the prediction refresh
+# (06:00 UTC in the private control repo), fetches the PUBLIC read-only projection
+# (no secrets), writes a hash-chained manifest, stamps it with OpenTimestamps, and commits
+# with the default GITHUB_TOKEN. Everything here — logic, data, proofs — is public.
+
+on:
+  schedule:
+    - cron: '47 6 * * *'   # daily 06:47 UTC, after the 06:00 predictions refresh
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: attest
+  cancel-in-progress: false
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build today's manifest (hash-chained)
+        run: node scripts/attest.mjs
+
+      - name: OpenTimestamps stamp (Bitcoin anchor; soft-fail)
+        run: |
+          pip install --quiet opentimestamps-client || true
+          F="attestations/$(date -u +%F).json"
+          if ots stamp "$F"; then echo "stamped $F"; else echo "::warning::ots stamp failed — manifest still committed; proof can be added on a later run"; fi
+          # upgrade any pending proofs whose Bitcoin anchor has since confirmed (best-effort)
+          for f in attestations/*.ots; do [ -e "$f" ] && ots upgrade "$f" || true; done
+
+      - name: Commit + push
+        run: |
+          git config user.name "sparkxi-attest-bot"
+          git config user.email "attest@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "attest: $(date -u +%F)"
+          git push
