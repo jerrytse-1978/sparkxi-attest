@@ -1,7 +1,7 @@
 {
  "schema": "sparkxi-attestation-v1",
  "date": "2026-07-24",
- "generated_at": "2026-07-24T12:59:53.025Z",
+ "generated_at": "2026-07-24T13:00:49.130Z",
  "source": "https://sparkxi.base44.app/functions/publicDirectory (public read-only projection; anonymously verifiable)",
  "note": "All predictions published by SparkXI as of generated_at. Verify: recompute sha256 of this file, check it in chain.jsonl, the git commit timestamp, and the OpenTimestamps proof (.ots). A prediction is attested iff it appears in a manifest whose timestamps precede its kickoff_utc.",
  "prev_date": null,
